@@ -1,5 +1,6 @@
 # AndroidSDK
 需要在引用的项目根目录的build.gradle中添加一下 统一版本控制
+
 ext {
     // Sdk and tools
     targetSdkVersion = 28
