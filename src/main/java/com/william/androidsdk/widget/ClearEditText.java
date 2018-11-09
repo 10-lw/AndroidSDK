@@ -12,13 +12,11 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-import com.hjq.baselibrary.R;
+import com.william.androidsdk.R;
+
 
 /**
- *    author : HJQ
- *    github : https://github.com/getActivity/AndroidProject
- *    time   : 2018/10/18
- *    desc   : 带清除按钮的EditText
+ *   带清除按钮的EditText
  */
 public class ClearEditText extends AppCompatEditText
         implements View.OnTouchListener, View.OnFocusChangeListener, TextWatcher {
