@@ -4,10 +4,7 @@ import android.support.v7.widget.RecyclerView;
 
 
 /**
- *    author : HJQ
- *    github : https://github.com/getActivity/AndroidProject
- *    time   : 2018/10/18
- *    desc   : RecyclerView滚动监听类
+ *  RecyclerView滚动监听类
  */
 public interface OnScrollingListener {
 

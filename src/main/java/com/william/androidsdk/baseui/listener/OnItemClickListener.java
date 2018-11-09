@@ -3,10 +3,7 @@ package com.william.androidsdk.baseui.listener;
 import android.view.View;
 
 /**
- *    author : HJQ
- *    github : https://github.com/getActivity/AndroidProject
- *    time   : 2018/10/18
- *    desc   : RecyclerView条目点击监听类
+ *= RecyclerView条目点击监听类
  */
 public interface OnItemClickListener{
 

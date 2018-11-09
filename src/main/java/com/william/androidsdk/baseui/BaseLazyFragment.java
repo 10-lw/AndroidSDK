@@ -16,10 +16,7 @@ import android.view.ViewGroup;
 import java.lang.reflect.Field;
 
 /**
- *    author : HJQ
- *    github : https://github.com/getActivity/AndroidProject
- *    time   : 2018/10/18
- *    desc   : Fragment懒加载基类
+ * Fragment懒加载基类
  */
 public abstract class BaseLazyFragment extends Fragment {
 
@@ -126,9 +123,6 @@ public abstract class BaseLazyFragment extends Fragment {
 
     //引入布局
     protected abstract int getLayoutId();
-
-    //标题栏id
-    protected abstract int getTitleBarId();
 
     //初始化控件
     protected abstract void initView();

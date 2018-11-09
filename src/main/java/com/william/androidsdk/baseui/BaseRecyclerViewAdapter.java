@@ -12,14 +12,15 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.william.androidsdk.baseui.listener.OnItemClickListener;
+import com.william.androidsdk.baseui.listener.OnItemLongClickListener;
+import com.william.androidsdk.baseui.listener.OnScrollingListener;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : HJQ
- *    github : https://github.com/getActivity/AndroidProject
- *    time   : 2018/10/18
- *    desc   : RecyclerView适配器基类
+ * RecyclerView适配器基类
  */
 public abstract class BaseRecyclerViewAdapter<T, VH extends BaseRecyclerViewAdapter.ViewHolder>
                         extends RecyclerView.Adapter<VH> {

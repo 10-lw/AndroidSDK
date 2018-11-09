@@ -9,10 +9,7 @@ import com.william.androidsdk.utils.KeyboardUtils;
 
 
 /**
- *    author : HJQ
- *    github : https://github.com/getActivity/AndroidProject
- *    time   : 2018/10/18
- *    desc   : Activity基类
+ *Activity基类
  */
 public abstract class BaseActivity extends AppCompatActivity {
 

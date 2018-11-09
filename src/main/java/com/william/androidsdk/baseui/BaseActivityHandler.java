@@ -6,10 +6,7 @@ import android.os.Handler;
 import java.lang.ref.WeakReference;
 
 /**
- *    author : HJQ
- *    github : https://github.com/getActivity/AndroidProject
- *    time   : 2018/10/18
- *    desc   : Activity中优化Handler基类
+ * Activity中优化Handler基类
  */
 public abstract class BaseActivityHandler<T extends Activity> extends Handler {
 

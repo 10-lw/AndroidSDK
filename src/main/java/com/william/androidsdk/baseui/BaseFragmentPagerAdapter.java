@@ -10,10 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : HJQ
- *    github : https://github.com/getActivity/AndroidProject
- *    time   : 2018/10/18
- *    desc   : FragmentPagerAdapter基类
+ *FragmentPagerAdapter基类
  */
 public abstract class BaseFragmentPagerAdapter<T extends Fragment> extends FragmentPagerAdapter {
 
@@ -50,7 +47,7 @@ public abstract class BaseFragmentPagerAdapter<T extends Fragment> extends Fragm
 
     @Override
     public int getCount() {
-        return mFragments.size();
+        return mFragments == null ? 0 : mFragments.size();
     }
 
     @Override

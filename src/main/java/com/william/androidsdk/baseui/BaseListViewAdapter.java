@@ -14,10 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : HJQ
- *    github : https://github.com/getActivity/AndroidProject
- *    time   : 2018/10/18
- *    desc   : ListView适配器基类
+ *   ListView适配器基类
  */
 public abstract class BaseListViewAdapter<T, VH extends BaseListViewAdapter.ViewHolder> extends BaseAdapter {
 
