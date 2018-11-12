@@ -34,11 +34,14 @@ public abstract class BaseFragmentPagerAdapter<T extends Fragment> extends Fragm
 
     public BaseFragmentPagerAdapter(FragmentManager fm) {
         super(fm);
-        init(fm, mFragments);
     }
 
-    //初始化Fragment
-    protected abstract void init(FragmentManager fm, List<T> list);
+    public BaseFragmentPagerAdapter(FragmentManager fm, List<T> list) {
+        super(fm);
+        this.mFragments.clear();
+        this.mFragments.addAll(list);
+    }
+
 
     @Override
     public T getItem(int position) {
