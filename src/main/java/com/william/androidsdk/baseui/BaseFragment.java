@@ -18,9 +18,8 @@ import java.lang.reflect.Field;
 /**
  * Fragment懒加载基类
  */
-public abstract class BaseLazyFragment extends Fragment {
+public abstract class BaseFragment extends Fragment {
 
-    private boolean isLazyLoad = false;//是否已经懒加载
     private View mRootView;//根布局
     public Activity mActivity;//Activity对象
 
@@ -58,10 +57,6 @@ public abstract class BaseLazyFragment extends Fragment {
         return mRootView;
     }
 
-    protected boolean isLazyLoad() {
-        return isLazyLoad;
-    }
-
     /**
      * 是否在Fragment使用沉浸式
      */
@@ -79,27 +74,9 @@ public abstract class BaseLazyFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        if (isVisibleToUser && !isLazyLoad() && getView() != null) {
-            isLazyLoad = true;
-            init();
-        }
+        init();
     }
 
-    private boolean isVisibleToUser;
-
-    @Override
-    public void setUserVisibleHint(boolean isVisibleToUser) {
-        this.isVisibleToUser = isVisibleToUser;
-        if (isVisibleToUser && !isLazyLoad() && getView() != null) {
-            isLazyLoad = true;
-            init();
-        }
-        super.setUserVisibleHint(isVisibleToUser);
-    }
-
-    public boolean isVisibleToUser() {
-        return isVisibleToUser;
-    }
 
     @Override
     public void onDetach() {
@@ -144,7 +121,7 @@ public abstract class BaseLazyFragment extends Fragment {
     /**
      * 跳转到其他Activity
      *
-     * @param cls          目标Activity的Class
+     * @param cls 目标Activity的Class
      */
     public void startActivity(Class<? extends Activity> cls) {
         startActivity(new Intent(getContext(), cls));
