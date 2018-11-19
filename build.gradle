@@ -27,7 +27,18 @@ android {
 
 }
 
+ext {
+    retrofitVersion = '2.4.0'
+    logginginterceptor = '3.9.1'
+    rxjavaVersion = '2.1.11'
+    rxandroidVersion = "2.0.2"
+    eventBusVersion = "3.0.0"
+
+}
+
 dependencies {
     api "com.android.support:appcompat-v7:$rootProject.ext.supportLibraryVersion"
     api "com.android.support:design:$rootProject.ext.supportLibraryVersion"
+    api "io.reactivex.rxjava2:rxjava:$rxjavaVersion"
+    api "io.reactivex.rxjava2:rxandroid:$rxandroidVersion"
 }
