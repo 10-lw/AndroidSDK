@@ -1,5 +1,6 @@
 package com.william.androidsdk.utils;
 
+import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -91,4 +92,18 @@ public class AppInfoUtils {
         return pm.getApplicationLabel(appInfo);
     }
 
+    public static String getVersionCode(Context context) {
+        PackageManager packageManager = context.getPackageManager();
+        try {
+            PackageInfo packageInfo = packageManager.getPackageInfo(context.getPackageName(), 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                return String.valueOf(packageInfo.getLongVersionCode());
+            } else {
+                return String.valueOf(packageInfo.versionCode);
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
