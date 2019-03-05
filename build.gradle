@@ -41,4 +41,5 @@ dependencies {
     api "com.android.support:design:$rootProject.ext.supportLibraryVersion"
     api "io.reactivex.rxjava2:rxjava:$rxjavaVersion"
     api "io.reactivex.rxjava2:rxandroid:$rxandroidVersion"
+    implementation files('libs/commons-net-3.6.jar')
 }
