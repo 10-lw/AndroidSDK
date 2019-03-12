@@ -16,7 +16,6 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 public class FTPManager {
@@ -29,12 +28,17 @@ public class FTPManager {
         ftpClient = new FTPClient();
     }
 
-    public boolean connectByConfig(FtpConnectStateListener ftpListener) {
-        HashMap<String, String> map = FtpConfigUtils.readContentOfFile(new File(config));
+    public boolean connectByConfig(FTPTransferInfo ftpTransferInfo, FtpConnectStateListener ftpListener) {
         try {
-//            return this.connect(map.get(FtpConfigUtils.IP), Integer.parseInt(map.get(FtpConfigUtils.PORT)), map.get(FtpConfigUtils.USER_NAME), map.get(FtpConfigUtils.PWD), ftpListener);
-            return this.connect("149.129.73.32", 20002, "ysjUserName", "ysjPassword", ftpListener);
+            if (ftpTransferInfo == null) {
+                return this.connect("183.6.117.87", 20003, "ysjUserName", "ysjPassword", ftpListener);
+            } else {
+                return this.connect(ftpTransferInfo.getHost(), ftpTransferInfo.getPort(),
+                        String.valueOf(ftpTransferInfo.getUser()), String.valueOf(ftpTransferInfo.getPass()), ftpListener);
+//                    "ysjUserName", "ysjPassword", ftpListener);
+            }
         } catch (Exception e) {
+            ftpListener.onLoginState(false);
             Log.e(TAG, "error!!", e);
         }
         return false;
@@ -42,7 +46,6 @@ public class FTPManager {
 
     // 连接到ftp服务器
     public synchronized boolean connect(String ip, int port, String user, String pwd, FtpConnectStateListener ftpListener) throws Exception {
-        HashMap<String, String> stringStringHashMap = FtpConfigUtils.readContentOfFile(new File("/data/local/one/manage.conf"));
         boolean bool = false;
         if (ftpClient.isConnected()) {
 //            return true;
@@ -90,7 +93,6 @@ public class FTPManager {
             listener.onFail("服务器文件不存在");
             return false;
         }
-        Log.d(TAG, "downloadFile: =====downloadFile====thread: " + Thread.currentThread());
         FTPFile ftpFile = null;
         for (int i = 0; i < files.length; i++) {
             String name = serverFile.getName();
@@ -220,7 +222,7 @@ public class FTPManager {
         return remote;
     }
 
-    private volatile long uploadProcess = 0;
+    private volatile int uploadProcess = 0;
 
 
     public int getRemoteFileProgress(String localPath, String serverPath) {
@@ -235,7 +237,7 @@ public class FTPManager {
     }
 
     // 实现上传文件的功能
-    public synchronized boolean uploadFile(String localPath, String serverPath, FtpStateListener listener)
+    public synchronized boolean uploadFile(String localPath, String serverPath, String fileNameOnServer, FtpStateListener listener)
             throws Exception {
         if (listener == null) {
             return false;
@@ -249,20 +251,21 @@ public class FTPManager {
         }
         serverPath = checkRemotePath(serverPath);
         createDirectory(serverPath); // 如果文件夹不存在，创建文件夹
-        String serverName = serverPath + localFile.getName();
+        String serverName = serverPath + fileNameOnServer;
         Log.d(TAG, "服务器文件存放路径：" + serverName);
         // 如果本地文件存在，服务器文件也在，上传文件，这个方法中也包括了断点上传
         long localSize = localFile.length(); // 本地文件的长度
-        String fileName = localFile.getName();
-        long serverSize = getServerSize(serverPath, fileName);//远程文件的长度
+//        String fileName = localFile.getName();
+
+        long serverSize = getServerSize(serverPath, fileNameOnServer);//远程文件的长度
 
         if (localSize < serverSize) {
-            if (ftpClient.deleteFile(fileName)) {
+            if (ftpClient.deleteFile(fileNameOnServer)) {
                 Log.d(TAG, "服务器文件大于本地文件大小, 删除文件, 开始重新上传");
                 serverSize = 0;
             }
         } else if (localSize == serverSize) {
-            Log.d(TAG, "===服务器上存在该文件." + serverName);
+            Log.d(TAG, "======服务器上存在该文件." + serverName);
             listener.onSuccessful(serverName);
             return true;
         }
@@ -278,26 +281,25 @@ public class FTPManager {
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         ftpClient.setRestartOffset(serverSize);
         raf.seek(serverSize);
-        OutputStream output = ftpClient.appendFileStream(fileName);
+        OutputStream output = ftpClient.appendFileStream(fileNameOnServer);
         byte[] b = new byte[1024];
         int length = 0;
         while ((length = raf.read(b)) != -1) {
             output.write(b, 0, length);
             currentSize = currentSize + length;
             if (currentSize / step != uploadProcess) {
-                uploadProcess = currentSize / step;
-                if (uploadProcess % 5 == 0) {
-                    Log.d(TAG, "===上传进度：" + uploadProcess + " abort:" + abort);
-                    listener.onProgress((int) uploadProcess);
+                uploadProcess = (int)(currentSize / step);
+//                if (uploadProcess % 2 == 0) {
+                Log.d(TAG, "uploadFile: ====progress:"+uploadProcess);
+                    listener.onProgress( uploadProcess);
                     if (abort && uploadProcess < 100) {
-                        boolean a = ftpClient.abort();
+                        listener.onAbort(uploadProcess, serverName, currentSize);
+                        ftpClient.abort();
                         closeFTP();
-                        if (a) {
-                            abort = false;
-                            break;
-                        }
+                        abort = false;
+                        break;
                     }
-                }
+//                }
             }
         }
         output.flush();

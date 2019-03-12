@@ -26,7 +26,7 @@ public class FTPDownloadTaskManager {
     private static final String TAG = "FTPDownloadTaskManager";
     private static FTPDownloadTaskManager ftpDownloadTaskManager;
     //一次最多同时下载的数量
-    private static final int MAX_DOWNLOAD_COUNT = 3;
+    public static final int MAX_DOWNLOAD_COUNT = 3;
     private volatile int downloadCurrentCount = 0;
     private static Object count;
 
@@ -114,7 +114,7 @@ public class FTPDownloadTaskManager {
                         final FTPManager ftpManager = new FTPManager();
                         final FtpStateResultBean result = new FtpStateResultBean();
 
-                        ftpManager.connectByConfig(new FtpConnectStateListener() {
+                        ftpManager.connectByConfig(null, new FtpConnectStateListener() {
                             @Override
                             public void onLoginState(boolean success) {
                                 //step 2  start download files
@@ -147,6 +147,11 @@ public class FTPDownloadTaskManager {
                                                 result.setErrorMsg(msg);
                                                 emitter.onNext(result);
                                                 emitter.onComplete();
+                                            }
+
+                                            @Override
+                                            public void onAbort(int progress, String remotePath, long remoteFileSize) {
+
                                             }
                                         });
                                     } catch (Exception e) {

@@ -3,11 +3,12 @@ package com.william.androidsdk.ftp;
 import android.annotation.SuppressLint;
 import android.util.Log;
 
-
 import com.william.androidsdk.utils.StringUtils;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
@@ -27,8 +28,10 @@ public class FTPUploadTaskManager {
     private volatile int uploadCurrentCount = 0;
     private static Object count;
 
-    //upload
+    //upload 等待上传的文件
     private HashMap<String, FtpTranslateBean> pendingUploadTasks;
+    //正在上传的文件信息
+    private volatile HashMap<String, FtpTranslateBean> uploadingTasks;
     private LinkedList<String> uploadPendingTaskSet;
     private LinkedList<String> uploadingSet;
     private HashMap<String, FTPManager> managerMap;
@@ -44,6 +47,7 @@ public class FTPUploadTaskManager {
 
     private FTPUploadTaskManager() {
         pendingUploadTasks = new HashMap<>();
+        uploadingTasks = new HashMap<>();
         uploadPendingTaskSet = new LinkedList<>();
         uploadingSet = new LinkedList<>();
         managerMap = new HashMap<>();
@@ -51,46 +55,63 @@ public class FTPUploadTaskManager {
 
     private void startNextUploadTask() {
         synchronized (uploadPendingTaskSet) {
-            Log.d(TAG, "==========startNextUploadTask  .." + uploadCurrentCount + " size:" + uploadPendingTaskSet.size());
             if (uploadCurrentCount < MAX_UPLOAD_COUNT && !uploadPendingTaskSet.isEmpty()) {
                 String s = uploadPendingTaskSet.removeFirst();
                 if (!StringUtils.isNullOrEmpty(s)) {
                     FtpTranslateBean ftpUploadBean = pendingUploadTasks.get(s);
-                    loginAndUploadFile(ftpUploadBean.localPath, ftpUploadBean.remotePath, ftpUploadBean.listener);
+                    loginAndUploadFile(ftpUploadBean.localPath, ftpUploadBean.remotePath,
+                            ftpUploadBean.remoteFileName, ftpUploadBean.listener, ftpUploadBean.ftpTransferInfo);
                 }
             }
         }
     }
 
-    private void resetAll() {
+    public void resetAll() {
         ftpUploadTaskManager = null;
         pendingUploadTasks = null;
+        uploadPendingTaskSet.clear();
         uploadPendingTaskSet = null;
+        uploadingTasks.clear();
+        uploadingTasks = null;
         uploadCurrentCount = 0;
+        uploadingSet.clear();
+        uploadingSet = null;
     }
 
-    private void storeUploadFtpTask(String localPath, String remotePath, FtpStateListener listener) {
+    private void storeUploadFtpTask(String localPath, FtpTranslateBean ftpUploadBean) {
         synchronized (uploadPendingTaskSet) {
             if (!uploadPendingTaskSet.contains(localPath)) {
-                FtpTranslateBean ftpUploadBean = new FtpTranslateBean(localPath, remotePath, listener);
                 pendingUploadTasks.put(localPath, ftpUploadBean);
                 uploadPendingTaskSet.add(localPath);
             }
         }
     }
 
+    public synchronized void resumeUploadFile(String localPath) {
+        if (uploadingTasks.containsKey(localPath)) {
+            Log.d(TAG, "resumeUploadFile: ===" + localPath);
+            FtpTranslateBean ftpUploadBean = uploadingTasks.get(localPath);
+            loginAndUploadFile(ftpUploadBean.localPath, ftpUploadBean.remotePath,
+                    ftpUploadBean.remoteFileName, ftpUploadBean.listener, ftpUploadBean.ftpTransferInfo);
+        }
+    }
+
+    public void addDBUploadingData(String localPath, FtpTranslateBean ftpUploadBean) {
+        if (!uploadingTasks.containsKey(localPath)) {
+            uploadingTasks.put(localPath, ftpUploadBean);
+        }
+    }
+
     /**
      * 每单个上传需要建立一个新的连接, 所以想同时上传多个文件,需要建立多个ftp连接, 并且在上传成功/失败时 自动关闭当前的连接,
-     *
-     * @param localPath
-     * @param serverPath
-     * @param listener
      */
     @SuppressLint("CheckResult")
-    public synchronized void loginAndUploadFile(final String localPath, final String serverPath, final FtpStateListener listener) {
+    public synchronized void loginAndUploadFile(final String localPath, final String serverPath,
+                                                final String fileOnServerName, final FtpStateListener listener, final FTPTransferInfo ftpTransferInfo) {
+        FtpTranslateBean ftpUploadBean = new FtpTranslateBean(localPath, serverPath, fileOnServerName, listener, ftpTransferInfo);
         if (uploadCurrentCount >= MAX_UPLOAD_COUNT) {
             //当上传的数量大于规定的数量时,暂时将任务保存起来.
-            storeUploadFtpTask(localPath, serverPath, listener);
+            storeUploadFtpTask(localPath, ftpUploadBean);
             return;
         }
         synchronized (count) {
@@ -98,7 +119,9 @@ public class FTPUploadTaskManager {
         }
         if (!uploadingSet.contains(localPath)) {
             uploadingSet.add(localPath);
+            uploadingTasks.put(localPath, ftpUploadBean);
         } else {
+            Log.d(TAG, "loginAndUploadFile: is in uploading task");
             return;
         }
         Observable
@@ -109,13 +132,13 @@ public class FTPUploadTaskManager {
                         managerMap.put(localPath, ftpManager);
                         final FtpStateResultBean result = new FtpStateResultBean();
                         //第一步 连接ftp服务器
-                        ftpManager.connectByConfig(new FtpConnectStateListener() {
+                        ftpManager.connectByConfig(ftpTransferInfo, new FtpConnectStateListener() {
                             @Override
                             public void onLoginState(boolean success) {
                                 if (success) {
                                     try {
                                         //第二步 连接成功后开始上传文件
-                                        ftpManager.uploadFile(localPath, serverPath, new FtpStateListener() {
+                                        ftpManager.uploadFile(localPath, serverPath, fileOnServerName, new FtpStateListener() {
                                             @Override
                                             public void onProgress(int progress) {
                                                 result.setProgress(progress);
@@ -138,11 +161,24 @@ public class FTPUploadTaskManager {
                                             public void onFail(String msg) {
                                                 onFtpFail(msg, result, emitter, ftpManager);
                                             }
+
+                                            @Override
+                                            public void onAbort(int progress, String path, long remoteFileSize) {
+                                                result.setSuccess(2);
+                                                result.setProgress(progress);
+                                                result.setRemoteFilePath(path);
+                                                result.setRemoteFileSize(remoteFileSize);
+                                                result.setLocalFilePath(localPath);
+                                                emitter.onNext(result);
+                                                emitter.onComplete();
+                                            }
                                         });
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                         onFtpFail(e.getMessage(), result, emitter, ftpManager);
                                     }
+                                } else {
+                                    onFtpFail("Login ftp error!", result, emitter, ftpManager);
                                 }
                             }
                         });
@@ -157,13 +193,18 @@ public class FTPUploadTaskManager {
                         if (result.getProgress() > 0) {
                             listener.onProgress(result.getProgress());
                         }
-                        if (result.getProgress() == 100 && result.getSuccess() == 1) {
+                        if (result.getProgress() == 100 && result.getSuccess() == FtpStateResultBean.SUCCESS_TYPE_VALUE) {
                             listener.onSuccessful(result.getRemoteFilePath());
-                            checkAndStartNewOne();
+                            checkAndStartNewOne(localPath);
                         }
-                        if (result.getSuccess() == 0) {
+                        if (result.getSuccess() == FtpStateResultBean.FAIL_TYPE_VALUE) {
                             listener.onFail(result.getErrorMsg());
-                            checkAndStartNewOne();
+                            checkAndStartNewOne(localPath);
+                        }
+
+                        if (result.getSuccess() == FtpStateResultBean.ABORT_TYPE_VALUE) {
+                            uploadingSet.remove(localPath);
+                            listener.onAbort(result.getProgress(), result.getRemoteFilePath(), result.getRemoteFileSize());
                         }
                     }
                 });
@@ -177,7 +218,6 @@ public class FTPUploadTaskManager {
                 if (uploadOrDownload) {
                     synchronized (count) {
                         uploadCurrentCount--;
-                        Log.d(TAG, "checkAndStartNewOne: =====count2:::" + uploadCurrentCount);
                     }
                 }
             } else {
@@ -185,6 +225,24 @@ public class FTPUploadTaskManager {
             }
         } else {
             Log.d(TAG, "abortTransfer: =====2222=null=====");
+        }
+    }
+
+    public synchronized void abortAllTransfer() {
+        Log.d(TAG, "abortAllTransfer: =====size:" + managerMap.size());
+        if (managerMap != null && managerMap.size() > 0) {
+            Set<Map.Entry<String, FTPManager>> entries = managerMap.entrySet();
+            for (Map.Entry<String, FTPManager> entry : entries) {
+                FTPManager ftpManager = entry.getValue();
+                if (ftpManager != null) {
+                    ftpManager.pauseUploadOrDownload();
+                }
+            }
+            uploadingSet.clear();
+            uploadingTasks.clear();
+            managerMap.clear();
+            uploadPendingTaskSet.clear();
+            uploadCurrentCount = 0;
         }
     }
 
@@ -201,10 +259,11 @@ public class FTPUploadTaskManager {
         ftpManager.closeFTP();
     }
 
-    private synchronized void checkAndStartNewOne() {
+    private synchronized void checkAndStartNewOne(String localPath) {
+        uploadingSet.remove(localPath);
+        uploadingTasks.remove(localPath);
         synchronized (count) {
             uploadCurrentCount--;
-            Log.d(TAG, "checkAndStartNewOne: =====count1:::" + uploadCurrentCount);
         }
         if (uploadCurrentCount < MAX_UPLOAD_COUNT) {
             startNextUploadTask();

@@ -5,6 +5,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Environment;
+import android.util.Base64;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
@@ -41,7 +43,7 @@ public class FileUtils {
     }
 
     public static void purgeDirectory(final File dir) {
-        for (File file: dir.listFiles()) {
+        for (File file : dir.listFiles()) {
             if (file.isFile()) {
                 file.delete();
             }
@@ -251,7 +253,49 @@ public class FileUtils {
         return filePath;
     }
 
+    /**
+     * 将字符串转成MD5值
+     *
+     * @param string
+     * @return
+     */
+    public static String stringToMD5(String string) {
+        MessageDigest md;
 
+        try {
+            md = MessageDigest.getInstance("MD5");
+            md.update(string.getBytes());
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        byte[] out = md.digest();
+
+        final char hex_digits[] = {
+                '0', '1', '2', '3',
+                '4', '5', '6', '7',
+                '8', '9', 'a', 'b',
+                'c', 'd', 'e', 'f'};
+
+        char str[] = new char[out.length * 2];
+        for (int i = 0; i < out.length; i++) {
+            int j = i << 1;
+            str[j] = hex_digits[(out[i] >> 4) & 0x0F];
+            str[j + 1] = hex_digits[out[i] & 0x0F];
+        }
+
+        return String.valueOf(str);
+    }
+
+
+    /**
+     * RandomAccessFile 获取文件的MD5值, 内部实现是使用 RandomAccessFile
+     * 只获取指定三个位置(头部,中间, 尾部)的指定大小(512byte)来计算md5
+     *
+     * @param file 文件路径, 大文件获取
+     * @return md5
+     */
     public static String computeMD5(File file) throws IOException, NoSuchAlgorithmException {
         if (!file.exists()) {
             throw new FileNotFoundException();
@@ -270,7 +314,7 @@ public class FileUtils {
                 '0', '1', '2', '3',
                 '4', '5', '6', '7',
                 '8', '9', 'a', 'b',
-                'c', 'd', 'e', 'f' };
+                'c', 'd', 'e', 'f'};
 
         char str[] = new char[out.length * 2];
         for (int i = 0; i < out.length; i++) {
@@ -282,39 +326,14 @@ public class FileUtils {
         return String.valueOf(str);
     }
 
-    public static byte[] getDigestBuffer(File file) throws IOException {
-        final int digestBlockLength = 512;
-        byte[] digestBuffer = null;
-        RandomAccessFile rf = null;
-
-        try {
-            rf = new RandomAccessFile(file, "r");
-
-            long fileSize = rf.length();
-
-            // TODO: what about an empty file?
-            if (fileSize <= (digestBlockLength * 3)) {
-                digestBuffer = new byte[(int)fileSize];
-                rf.read(digestBuffer);
-            } else {
-                // 3 digest blocks, head, mid, end
-                digestBuffer = new byte[3 * digestBlockLength];
-                rf.seek(0);
-                rf.read(digestBuffer, 0, digestBlockLength);
-                rf.seek((fileSize / 2) - (digestBlockLength / 2));
-                rf.read(digestBuffer, digestBlockLength, digestBlockLength);
-                rf.seek(fileSize - digestBlockLength);
-                rf.read(digestBuffer, 2 * digestBlockLength, digestBlockLength);
-            }
-        }
-        finally {
-            if (rf != null) {
-                rf.close();
-            }
-        }
-        return digestBuffer;
-    }
-
+    /**
+     * 获取整个文件长度的md5, 通过 File io 来操作,
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
     public static String computeFullMD5Checksum(File file) throws IOException, NoSuchAlgorithmException {
         InputStream fis = null;
         try {
@@ -333,6 +352,147 @@ public class FileUtils {
         } finally {
             FileUtils.closeQuietly(fis);
         }
+    }
+
+    /**
+     * RandomAccessFile 获取整个文件的MD5值, RandomAccessFile 效率要比 file io 高
+     *
+     * @param file 文件路径
+     * @return md5
+     */
+    public static String computeMD52(File file) {
+        MessageDigest messageDigest;
+        RandomAccessFile randomAccessFile = null;
+        try {
+            messageDigest = MessageDigest.getInstance("MD5");
+            if (file == null) {
+                return "";
+            }
+            if (!file.exists()) {
+                return "";
+            }
+            randomAccessFile = new RandomAccessFile(file, "r");
+            byte[] bytes = new byte[1024 * 1024 * 10];
+            int len = 0;
+            while ((len = randomAccessFile.read(bytes)) != -1) {
+                Log.d(TAG, "computeMD52: ============len:" + len);
+                messageDigest.update(bytes, 0, len);
+            }
+            BigInteger bigInt = new BigInteger(1, messageDigest.digest());
+            String md5 = bigInt.toString(16);
+            while (md5.length() < 32) {
+                md5 = "0" + md5;
+            }
+            return md5;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (randomAccessFile != null) {
+                    randomAccessFile.close();
+                    randomAccessFile = null;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return "";
+    }
+
+    public static byte[] getDigestBuffer(File file) throws IOException {
+        final int digestBlockLength = 512;
+        byte[] digestBuffer = null;
+        RandomAccessFile rf = null;
+
+        try {
+            rf = new RandomAccessFile(file, "r");
+
+            long fileSize = rf.length();
+
+            // TODO: what about an empty file?
+            if (fileSize <= (digestBlockLength * 3)) {
+                digestBuffer = new byte[(int) fileSize];
+                rf.read(digestBuffer);
+            } else {
+                // 3 digest blocks, head, mid, end
+                digestBuffer = new byte[3 * digestBlockLength];
+                rf.seek(0);
+                rf.read(digestBuffer, 0, digestBlockLength);
+                rf.seek((fileSize / 2) - (digestBlockLength / 2));
+                rf.read(digestBuffer, digestBlockLength, digestBlockLength);
+                rf.seek(fileSize - digestBlockLength);
+                rf.read(digestBuffer, 2 * digestBlockLength, digestBlockLength);
+            }
+        } finally {
+            if (rf != null) {
+                rf.close();
+            }
+        }
+        return digestBuffer;
+    }
+
+    /**
+     * 分片md5算法：
+     * <p>
+     * 文件尺寸小于4096字节,全文件base64编码，然后追加文件尺寸<size>，再md5
+     * 文件尺寸等于大于4096字节，取[0, <size>/2, <size> - 1024] 三个点开始的1024字节，每段base64编码后拼接成一个字符串，然后追加文件尺寸<size>，再md5
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static String getFileSpecialMd5(File file) throws IOException {
+        String digestBase64 = getDigestBase64(file);
+        return stringToMD5(digestBase64 + file.length());
+    }
+
+
+    private static String getDigestBase64(File file) throws IOException {
+        StringBuffer stringBuffer = new StringBuffer();
+        final int digestBlockLength = 1024;
+        RandomAccessFile rf = null;
+
+        try {
+            rf = new RandomAccessFile(file, "r");
+
+            long fileSize = rf.length();
+
+            if (fileSize < (digestBlockLength * 4)) {
+                FileInputStream inputFile;
+                try {
+                    inputFile = new FileInputStream(file);
+                    byte[] buffer = new byte[(int) file.length()];
+                    inputFile.read(buffer);
+                    inputFile.close();
+                    stringBuffer.append(Base64.encodeToString(buffer, Base64.DEFAULT).replaceAll("\r|\n", ""));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
+                // 3 digest blocks, head, mid, end
+                byte[] digestBuffer = new byte[3 * digestBlockLength];
+                rf.seek(0);
+                rf.read(digestBuffer, 0, digestBlockLength);
+                rf.seek((fileSize / 2));
+                rf.read(digestBuffer, digestBlockLength, digestBlockLength);
+                rf.seek(fileSize - digestBlockLength);
+                rf.read(digestBuffer, 2 * digestBlockLength, digestBlockLength);
+                //分别获取每段的base 64, 组成字符串
+                for (int i = 0; i < 3; i++) {
+                    stringBuffer.append(Base64.encodeToString(digestBuffer, i * 1024, 1024, Base64.DEFAULT).replaceAll("\r|\n", ""));
+                }
+            }
+        } finally {
+            if (rf != null) {
+                rf.close();
+            }
+        }
+
+        return stringBuffer.toString();
     }
 
     public static String hexToString(byte[] out) {
@@ -446,6 +606,7 @@ public class FileUtils {
 
     /**
      * 根据文件大小转换为B、KB、MB、GB单位字符串显示
+     *
      * @param filesize 文件的大小（long型）
      * @return 返回 转换后带有单位的字符串
      */

@@ -1,21 +1,42 @@
 package com.william.androidsdk.ftp;
 
 public class FtpStateResultBean {
+    //-1 -- default value
+    public static final int DEFAULT_VALUE = -1;
+    //0 -- fail
+    public static final int FAIL_TYPE_VALUE = 0;
+    //1 -- success
+    public static final int SUCCESS_TYPE_VALUE = 1;
+    //2 -- abort
+    public static final int ABORT_TYPE_VALUE = 2;
+
+
     private String localFilePath;
     private String remoteFilePath;
     private int progress;
-    private int success = -1; // -1 -- default value;  0 -- fail;  1 -- success
+    private int success = DEFAULT_VALUE; // -1 -- default value;  0 -- fail;  1 -- success；  2 -- abort
     private String errorMsg;
+    private long remoteFileSize;
+
 
     @Override
     public String toString() {
         return "FtpStateResultBean{" +
-                "remoteFilePath='" + remoteFilePath + '\'' +
+                "localFilePath='" + localFilePath + '\'' +
+                ", remoteFilePath='" + remoteFilePath + '\'' +
                 ", progress=" + progress +
                 ", success=" + success +
                 ", errorMsg='" + errorMsg + '\'' +
-                ", localFilePath='" + localFilePath + '\'' +
+                ", remoteFileSize=" + remoteFileSize +
                 '}';
+    }
+
+    public long getRemoteFileSize() {
+        return remoteFileSize;
+    }
+
+    public void setRemoteFileSize(long remoteFileSize) {
+        this.remoteFileSize = remoteFileSize;
     }
 
     public String getErrorMsg() {
