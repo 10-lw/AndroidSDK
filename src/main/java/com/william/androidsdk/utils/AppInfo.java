@@ -3,7 +3,7 @@ package com.william.androidsdk.utils;
 import android.graphics.drawable.Drawable;
 
 public class AppInfo {
-    private String fileName;
+    private String fileName = "default";
     private long fileSize;
     private String filePath;
     private boolean isInstalled;

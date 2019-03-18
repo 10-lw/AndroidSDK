@@ -22,11 +22,15 @@ public class AppInfoUtils {
         try {
             appInfo = new AppInfo();
             String path = item.getAbsolutePath();
+            PackageInfo packageInfo = getPackageInfo(packageManager, path);
+            if (packageInfo == null) {
+                return null;
+            }
             appInfo.setIconId(getAppIcon(packageManager, path));
             appInfo.setFileName(getAppLabel(packageManager, path).toString());
             appInfo.setFileSize(item.length());
             appInfo.setFilePath(item.getAbsolutePath());
-            appInfo.setInstalled(isApplicationAvilible(packageManager, getPackageInfo(packageManager, path).packageName));
+            appInfo.setInstalled(isApplicationAvilible(packageManager, packageInfo.packageName));
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -43,9 +47,12 @@ public class AppInfoUtils {
         List<PackageInfo> pinfo = pm.getInstalledPackages(0);// 获取所有已安装程序的包信息
         if (pinfo != null) {
             for (int i = 0; i < pinfo.size(); i++) {
-                String pn = pinfo.get(i).packageName;
-                if (appPackageName.equals(pn)) {
-                    return true;
+                PackageInfo packageInfo = pinfo.get(i);
+                if (packageInfo != null) {
+                    String pn = packageInfo.packageName;
+                    if (appPackageName.equals(pn)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -81,7 +88,7 @@ public class AppInfoUtils {
     private static CharSequence getAppLabel(PackageManager pm, String apkFilepath) {
         PackageInfo pkgInfo = getPackageInfo(pm, apkFilepath);
         if (pkgInfo == null) {
-            return null;
+            return " ";
         }
         ApplicationInfo appInfo = pkgInfo.applicationInfo;
         if (Build.VERSION.SDK_INT >= 8) {
