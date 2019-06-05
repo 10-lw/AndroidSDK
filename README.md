@@ -16,5 +16,6 @@ ext {
 
 应用此sdk， 需要在项目跟目录settings.gradle 中添加
 include ':AndroidSDK'
+
 需要使用sdk模块的build.gradle 中添加 
 implementation project(path: ':AndroidSDK')
