@@ -35,7 +35,7 @@
                 android:lineSpacingExtra="6dp"
                 android:text="订单提交成功"
                 android:textColor="#bf000000"
-                android:textSize="36sp" />
+                android:textSize="20sp" />
 
             <View
                 android:id="@+id/v_edit_dividing"
@@ -53,7 +53,7 @@
                 android:lineSpacingExtra="6dp"
                 android:text="我们将在30分钟处理，稍后通知您订单结果！感谢您选择"
                 android:textColor="#383838"
-                android:textSize="26sp" />
+                android:textSize="14sp" />
 
             <EditText
                 android:id="@+id/dialog_edit_text"
@@ -64,7 +64,7 @@
                 android:hint="请输入"
                 android:lineSpacingExtra="6dp"
                 android:textColor="#383838"
-                android:textSize="26sp" />
+                android:textSize="16sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -79,10 +79,10 @@
                 android:layout_weight="1"
                 android:background="@drawable/selector_btn_cancel_border_bg"
                 android:gravity="center"
-                android:minHeight="44dp"
+                android:minHeight="14dp"
                 android:text="取消"
                 android:textColor="#8a000000"
-                android:textSize="28sp" />
+                android:textSize="20sp" />
 
             <View
                 android:layout_width="1dp"
@@ -96,10 +96,10 @@
                 android:layout_weight="1"
                 android:background="@drawable/selector_btn_assuere_border_bg"
                 android:gravity="center"
-                android:minHeight="44dp"
+                android:minHeight="14dp"
                 android:text="确定"
                 android:textColor="#8a000000"
-                android:textSize="28sp" />
+                android:textSize="20sp" />
         </LinearLayout>
     </LinearLayout>
 

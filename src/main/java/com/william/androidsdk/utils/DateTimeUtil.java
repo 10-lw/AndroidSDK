@@ -9,7 +9,8 @@ import java.util.Locale;
 
 public class DateTimeUtil {
     public static final SimpleDateFormat DATE_FORMAT_YYYYMMDD_HHMMSS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-    public static final SimpleDateFormat DATE_FORMAT_YYYYMMDD_HHMM = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+    public static final SimpleDateFormat YMDHMS = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+    public static final SimpleDateFormat DATE_FORMAT_YYYYMMDD_HHMM = new SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.getDefault());
     public static final SimpleDateFormat DATE_FORMAT_YYYYMMDD = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
     /**
@@ -26,7 +27,14 @@ public class DateTimeUtil {
         if (date == null) {
             return "";
         }
-        return DATE_FORMAT_YYYYMMDD_HHMMSS.format(date);
+        return YMDHMS.format(date);
+    }
+
+    public static String formatDate2(Date date) {
+        if (date == null) {
+            return "";
+        }
+        return DATE_FORMAT_YYYYMMDD_HHMM.format(date);
     }
 
     public static String formatDate(Date date, SimpleDateFormat simpleDateFormat) {
