@@ -217,12 +217,12 @@ public class NetWorkUtils {
     /**
      * 通过callCmd("busybox ifconfig","HWaddr")获取mac地址
      *
-     * @attention 需要设备装有busybox工具
      * @return Mac Address
+     * @attention 需要设备装有busybox工具
      */
     private static String getMacFromCallCmd() {
         String result = "";
-        result = callCmd("busybox ifconfig", "HWaddr");
+        result = callCmd(ShellUtils.getBusyBox() + " ifconfig", "HWaddr");
 
         if (result == null || result.length() <= 0) {
             return null;

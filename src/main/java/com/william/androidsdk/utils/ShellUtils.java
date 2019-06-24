@@ -1,5 +1,8 @@
 package com.william.androidsdk.utils;
 
+import android.os.Build;
+import android.util.Log;
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -19,6 +22,14 @@ public class ShellUtils {
         throw new AssertionError();
     }
 
+    public static String getBusyBox() {
+        if (Build.VERSION.SDK_INT == 22) {
+            return "busybox1.11";
+        } else {
+            return "busybox";
+        }
+    }
+
 
     /**
      * 查看是否有了root权限
@@ -26,7 +37,32 @@ public class ShellUtils {
      * @return
      */
     public static boolean checkRootPermission() {
-        return execCommand("echo root", true, false).result == 0;
+        Process process = null;
+        DataOutputStream os = null;
+        try {
+            process = Runtime.getRuntime().exec("su");
+            os = new DataOutputStream(process.getOutputStream());
+            os.writeBytes("exit\n");
+            os.flush();
+            int exitValue = process.waitFor();
+            if (exitValue == 0) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            Log.d("*** DEBUG ***", "Unexpected error - Here is what I know: " + e.getMessage());
+            return false;
+        } finally {
+            try {
+                if (os != null) {
+                    os.close();
+                }
+                process.destroy();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -130,12 +166,13 @@ public class ShellUtils {
         BufferedReader errorResult = null;
         StringBuilder successMsg = null;
         StringBuilder errorMsg = null;
+        boolean runRoot = isRoot && checkRootPermission();
 
 
         DataOutputStream os = null;
         try {
             process = Runtime.getRuntime().exec(
-                    isRoot ? COMMAND_SU : COMMAND_SH);
+                    runRoot ? COMMAND_SU : COMMAND_SH);
             os = new DataOutputStream(process.getOutputStream());
             for (String command : commands) {
                 if (command == null) {
