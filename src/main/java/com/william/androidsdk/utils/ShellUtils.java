@@ -166,7 +166,9 @@ public class ShellUtils {
         BufferedReader errorResult = null;
         StringBuilder successMsg = null;
         StringBuilder errorMsg = null;
-        boolean runRoot = isRoot && checkRootPermission();
+        boolean b = checkRootPermission();
+        boolean runRoot = isRoot && b;
+        Log.d("tag", "execCommand: don't run as root, request:"+isRoot + " rom:"+ b);
 
 
         DataOutputStream os = null;
